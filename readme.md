@@ -1,6 +1,6 @@
 ### go-oapigen-boilerplate
 
-this repository is a boilerplate for open api schema first, to generate basic rest api using oapi-codegen library.
+this repository is a boilerplate for open api schema first, generate basic rest api using oapi-codegen library.
 
 
 ### how to use
@@ -17,5 +17,5 @@ this repository is a boilerplate for open api schema first, to generate basic re
 
 
 ### notes
-1. for request/response validation need to add middleware based on this:
+for request/response validation need to add middleware based on this:
 https://github.com/oapi-codegen/oapi-codegen?tab=readme-ov-file#requestresponse-validation-middleware
