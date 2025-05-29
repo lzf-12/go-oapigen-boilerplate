@@ -14,3 +14,8 @@ this repository is a boilerplate for open api schema first, to generate basic re
 ``` make generate ```
 
 4. code implementation & wire the routes
+
+
+### notes
+1. for request/response validation need to add middleware based on this:
+https://github.com/oapi-codegen/oapi-codegen?tab=readme-ov-file#requestresponse-validation-middleware
