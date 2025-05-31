@@ -1,6 +1,3 @@
-//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=types.cfg.yaml ../../docs/user.yaml
-//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=server.cfg.yaml ../../docs/user.yaml
-
 package user
 
 import (
@@ -52,7 +49,7 @@ func (u *UserImpl) CreateUser(ctx context.Context, request CreateUserRequestObje
 	return CreateUser201JSONResponse(user), nil
 }
 
-func (u *UserImpl) GetUsers(ctx context.Context, request GetUsersRequestObject) (GetUsersResponseObject, error) {
+func (u *UserImpl) GetApiV1Users(ctx context.Context, request GetApiV1UsersRequestObject) (GetApiV1UsersResponseObject, error) {
 
 	var result []User
 
@@ -71,5 +68,5 @@ func (u *UserImpl) GetUsers(ctx context.Context, request GetUsersRequestObject) 
 		Age:      &age,
 	})
 
-	return GetUsers200JSONResponse(result), nil
+	return GetApiV1Users200JSONResponse(result), nil
 }

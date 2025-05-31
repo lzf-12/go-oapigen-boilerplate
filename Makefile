@@ -11,15 +11,18 @@ generate-config:
 	# validate oas spec existence
 	@test -f "$(specpath)/$(package).yaml" || (echo "error: open api spec file /$(specpath)/$(package).yaml does not exist"; exit 1)
 
-	# generate oapi config file
+	# generate or refresh oapi config file
 	mkdir -p api/$(package)
 	PACKAGE=$(package);\
+	rm -f api/$(package)//server.cfg.yaml;\
 	[ -f api/$(package)/server.cfg.yaml ] || echo "package: $(package)\ngenerate:\n  gin-server: true\n  strict-server: true\n  embedded-spec: true\noutput: $(package)-server.gen.go" > api/$(package)/server.cfg.yaml;\
+	rm -f api/$(package)//types.cfg.yaml;\
 	[ -f api/$(package)/types.cfg.yaml ] || echo "package: $(package)\ngenerate:\n  models: true\noutput: $(package)-types.gen.go" > api/$(package)/types.cfg.yaml;\
-	[ -f api/$(package)/$(package).go ] || echo "//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=types.cfg.yaml ../../$(specpath)/$(package).yaml\n//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=server.cfg.yaml ../../$(specpath)/$(package).yaml\n\npackage $(package)\n" > api/$(package)/$(package).go
+	rm -f api/$(package)//gen.go;\
+	[ -f api/$(package)/gen.go ] || echo "//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=types.cfg.yaml ../../$(specpath)/$(package).yaml\n//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=server.cfg.yaml ../../$(specpath)/$(package).yaml\n\npackage $(package)\n" > api/$(package)/gen.go
 
 
-generate:
+generate-handler:
 	@echo "generating code from OpenAPI spec..."
 	go generate ./...
 

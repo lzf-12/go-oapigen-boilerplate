@@ -39,8 +39,8 @@ type User struct {
 	Username *string `json:"username,omitempty"`
 }
 
-// GetUsersParams defines parameters for GetUsers.
-type GetUsersParams struct {
+// GetApiV1UsersParams defines parameters for GetApiV1Users.
+type GetApiV1UsersParams struct {
 	// Role role to filter by
 	Role *string `form:"role,omitempty" json:"role,omitempty"`
 
