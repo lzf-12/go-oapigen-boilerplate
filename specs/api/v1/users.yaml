@@ -3,7 +3,7 @@ info:
   title: User Domain API
   version: 1.0.0
 paths:
-  /users:
+  /api/v1/users:
     get:
       summary: Get all users
       parameters:
@@ -87,6 +87,8 @@ components:
           type: string
     CreateUserResponse:
       type: object
+      required:
+        - email
       properties:
         id:
           type: string

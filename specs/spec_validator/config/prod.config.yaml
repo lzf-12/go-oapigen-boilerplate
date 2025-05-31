@@ -1,0 +1,23 @@
+# this config.yaml file used to configure on how the spec file path used for request and response validation
+
+validation:
+  enabled: true
+  validate_responses: false  # default disabled in production environment
+  skip_paths: # skip validation middleware
+    "/health": true
+    "/metrics": true
+    "/swagger": true
+
+specs:
+  - name: "order-api"
+    file_path: "./specs/v1/order.yaml"
+    base_path: "/api/v1/order"
+    enabled: true
+    description: "Order Api endpoint"
+    
+  - name: "user-api"
+    file_path: "./specs/users.yaml"
+    base_path: "/api/v1/users"
+    enabled: true
+    description: "User management API"
+  

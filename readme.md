@@ -15,7 +15,6 @@ this repository is a boilerplate for open api schema first, generate basic rest 
 
 4. code implementation & wire the routes
 
+5. (optional) define spec_validatior configuration
 
-### notes
-for request/response validation need to add middleware based on this:
-https://github.com/oapi-codegen/oapi-codegen?tab=readme-ov-file#requestresponse-validation-middleware
+6. (optional) create middleware and assign middleware to validate based on defined open api spec

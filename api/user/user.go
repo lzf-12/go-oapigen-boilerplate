@@ -28,14 +28,26 @@ func (u *UserImpl) CreateUser(ctx context.Context, request CreateUserRequestObje
 	u.Lock.Lock()
 	defer u.Lock.Unlock()
 
-	var user User
-	user.Username = &request.Body.Username
-	user.Email = (*string)(&request.Body.Email)
-	user.Role = (*string)(&request.Body.Role)
-	user.Age = request.Body.Age
+	result := make(map[int64]User, 1000)
 
-	// insert into in memory map -> can be changed to call insert db
-	u.Users[*user.Id] = user
+	var email *string = (*string)(&request.Body.Email)
+	var role *string = (*string)(&request.Body.Role)
+
+	user := User{
+		Username: &request.Body.Username,
+		Email:    email,
+		Role:     role,
+		Age:      request.Body.Age,
+	}
+
+	id := u.NextId
+	user.Id = &id
+
+	// placeholder implementation, should be changed to db
+	result[id] = user
+
+	u.Users = result
+	u.NextId = id + 1
 
 	return CreateUser201JSONResponse(user), nil
 }
@@ -46,7 +58,7 @@ func (u *UserImpl) GetUsers(ctx context.Context, request GetUsersRequestObject) 
 
 	// implement get users from db or cache here
 
-	// placeholder boilerplate
+	// placeholder implementation
 	username := "username"
 	email := "email"
 	role := Member
