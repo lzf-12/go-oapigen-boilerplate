@@ -24,10 +24,10 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Get all users
-	// (GET /api/v1/users)
-	GetApiV1Users(c *gin.Context, params GetApiV1UsersParams)
+	// (GET /user)
+	GetUser(c *gin.Context, params GetUserParams)
 	// Create a new user
-	// (POST /api/v1/users)
+	// (POST /user)
 	CreateUser(c *gin.Context)
 }
 
@@ -40,13 +40,13 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetApiV1Users operation middleware
-func (siw *ServerInterfaceWrapper) GetApiV1Users(c *gin.Context) {
+// GetUser operation middleware
+func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetApiV1UsersParams
+	var params GetUserParams
 
 	// ------------- Optional query parameter "role" -------------
 
@@ -71,7 +71,7 @@ func (siw *ServerInterfaceWrapper) GetApiV1Users(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetApiV1Users(c, params)
+	siw.Handler.GetUser(c, params)
 }
 
 // CreateUser operation middleware
@@ -114,21 +114,21 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/api/v1/users", wrapper.GetApiV1Users)
-	router.POST(options.BaseURL+"/api/v1/users", wrapper.CreateUser)
+	router.GET(options.BaseURL+"/user", wrapper.GetUser)
+	router.POST(options.BaseURL+"/user", wrapper.CreateUser)
 }
 
-type GetApiV1UsersRequestObject struct {
-	Params GetApiV1UsersParams
+type GetUserRequestObject struct {
+	Params GetUserParams
 }
 
-type GetApiV1UsersResponseObject interface {
-	VisitGetApiV1UsersResponse(w http.ResponseWriter) error
+type GetUserResponseObject interface {
+	VisitGetUserResponse(w http.ResponseWriter) error
 }
 
-type GetApiV1Users200JSONResponse []User
+type GetUser200JSONResponse []User
 
-func (response GetApiV1Users200JSONResponse) VisitGetApiV1UsersResponse(w http.ResponseWriter) error {
+func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
@@ -173,10 +173,10 @@ func (response CreateUser500JSONResponse) VisitCreateUserResponse(w http.Respons
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Get all users
-	// (GET /api/v1/users)
-	GetApiV1Users(ctx context.Context, request GetApiV1UsersRequestObject) (GetApiV1UsersResponseObject, error)
+	// (GET /user)
+	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
 	// Create a new user
-	// (POST /api/v1/users)
+	// (POST /user)
 	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
 }
 
@@ -192,17 +192,17 @@ type strictHandler struct {
 	middlewares []StrictMiddlewareFunc
 }
 
-// GetApiV1Users operation middleware
-func (sh *strictHandler) GetApiV1Users(ctx *gin.Context, params GetApiV1UsersParams) {
-	var request GetApiV1UsersRequestObject
+// GetUser operation middleware
+func (sh *strictHandler) GetUser(ctx *gin.Context, params GetUserParams) {
+	var request GetUserRequestObject
 
 	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetApiV1Users(ctx, request.(GetApiV1UsersRequestObject))
+		return sh.ssi.GetUser(ctx, request.(GetUserRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetApiV1Users")
+		handler = middleware(handler, "GetUser")
 	}
 
 	response, err := handler(ctx, request)
@@ -210,8 +210,8 @@ func (sh *strictHandler) GetApiV1Users(ctx *gin.Context, params GetApiV1UsersPar
 	if err != nil {
 		ctx.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(GetApiV1UsersResponseObject); ok {
-		if err := validResponse.VisitGetApiV1UsersResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(GetUserResponseObject); ok {
+		if err := validResponse.VisitGetUserResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {
@@ -255,18 +255,18 @@ func (sh *strictHandler) CreateUser(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xVTW/bOhD8K8S+3J4S20neQ6ub+4EiQA9FgPTQwA0YaW1vIJLKcuXUNfTfi6XsOI4c",
-	"FwGKnmRRS87szHK8giK4Onj0EiFfQSzm6Gz6+Z7RCl5F5Eu8bzCKLtYcamQhTCV2hvpw9ge5xkE+Oh1m",
-	"4Miv395kIMsaIQfygjNkaDNAZ6nSXdPAzgrk65XH2ihMfqalHKp0Pno97hps6chDBg7dLTJM9mxpIrK3",
-	"bkPrM/qZzCFf89q8nmVQWxFkDzl8v7bHP8fH34bHb28m/x71iSgTvG+IsVQWjxDZI/NEdEsn3N5hIUrn",
-	"I3PgS4x18BH7+qF+vilCmb71mnEY41riPqUeljr1okUHfOjBUrljD3n5/xz2Wbnx56ALv2WuS+SnIRWT",
-	"6JGpF/MhOEvejL9cQAYL5EhB/RqdDE+GihJq9LYmyOEsLSVT56nrga1psBgNlEhamGEaX1XGCgV/UUIO",
-	"n1DGNX0dXaUq3c7WoaQt1ysoMRZMtXSw2qyRYKZUCbK5XYLShhzuG2R96RruRMnWF2mvOlGWqUlVGNrs",
-	"OdD6Nhnf6JSbMDWMsakkKjqjNOxfgK7IkexgPzXx7HSPie1Eh7ubzyTU6XCojyJ4QZ80s3VdUZFUG9xF",
-	"pbh6gkCCLm08YpxCDv8MtoEyWKfJII3m1nnLbJed8butj01FUbTlzjitiI1zlpedXcZW1eZbBnXoQmn3",
-	"kC63orHG40MqNg8kcyNzNDNaoDc6baqL1mfPZmKbetBde4zyLpTLV4lySIt+rLa7CSPcYNtzZfTHCHRm",
-	"9MVPd65I7EoTm6LAGKdNVS1V6vNXjsUhAruhuIfJhV/YikpDvm5StP33d9H1j8FWJiIvkE0K6Wej2Jn4",
-	"ZMT0atmZ5gZ0aTJp27b9FQAA///qskCYXgcAAA==",
+	"H4sIAAAAAAAC/7xVXU8bOxD9K9Zc3u5CEuBetftGP1Qh9aFC6ktRiszuJDFafzAeh6bR/vdqvBtC2JAK",
+	"qerTxvZ45sw545M1VN4G79BxhHINsVqg1fnne0LN+DUiXeF9wsiyGcgHJDaYQ/Qc5WP1D2OThXJyOi7A",
+	"Gtev3hTAq4BQgnGMcyRoC0CrTSO3Zp6sZij7ncfYyGTcXELJNzk/Okl3Dbq2xkEBFu0tEkz3XEkRyWm7",
+	"gfUZ3ZwXUPa4NsuzAoJmRnJQwvdrffzz4vjb+PjtzfTfoyEQQYL3yRDWguKxRPGIPAPdwvG3d1ixwPlI",
+	"5OkKY/Au4pA/lOObytf5bNCMxRh7ioeQBrVEqRclOqDDoKypd+Qxjv8/h31SbvQ5qMJvkcuWcTOfgw1L",
+	"ytyL+uCtNk5dfLmEApZI0XjRa3IyPhlLFR/Q6WCghLO8lUVd5K5HqSdjjnlshRHNxrvLGkr4hJzJkguk",
+	"LTJShPJ6DTXGikzgrpC0p9irmWkYSd2uQIBCCfcJSRZdix0NRf909vIReZXbEk6hLZ4X6t+PcknmWvmZ",
+	"Ioyp4SjVCTmRe6F0Y6zhndpPZTs73SNbO5Vx7iYyc3U6Hsun8o7RZbZ0CI2pMl+juygQ108qGEabLx4R",
+	"zqCEf0ZbCxn1/jHK/G611kR61Um92/qFakxkaVkUi3k+YrJW06oTSumm2ZwVEHxnQ7tJOqeKSiuHDzlY",
+	"PRheKF6gmpslOiXzJbxIfPFsGrY+B91Dx8jvfL16FSmHuBgaabvrKUwJ24Eqkz8GoBNjSH5+ZVVGV6uY",
+	"qgpjnKWmWQnV568ci0MAdm1wD5JLt9SNqZVxIWUz++/vVpe/At2oiLREUtmWn41iJ+KTEZOnpefiG5nH",
+	"CNOcuUvR2UmiBkoY6WBGywm00/ZXAAAA//8aQ15XbgcAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

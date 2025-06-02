@@ -16,7 +16,7 @@ func NewUserHandler() *OrderImpl {
 	}
 }
 
-func (o *OrderImpl) GetOrders(ctx context.Context, request GetOrdersRequestObject) (GetOrdersResponseObject, error) {
+func (o *OrderImpl) GetOrder(ctx context.Context, request GetOrderRequestObject) (GetOrderResponseObject, error) {
 
 	var result []Order
 
@@ -33,5 +33,5 @@ func (o *OrderImpl) GetOrders(ctx context.Context, request GetOrdersRequestObjec
 		UserId: userid,
 	})
 
-	return GetOrders200JSONResponse(result), nil
+	return GetOrder200JSONResponse(result), nil
 }

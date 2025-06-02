@@ -49,7 +49,7 @@ func (u *UserImpl) CreateUser(ctx context.Context, request CreateUserRequestObje
 	return CreateUser201JSONResponse(user), nil
 }
 
-func (u *UserImpl) GetApiV1Users(ctx context.Context, request GetApiV1UsersRequestObject) (GetApiV1UsersResponseObject, error) {
+func (u *UserImpl) GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error) {
 
 	var result []User
 
@@ -68,5 +68,5 @@ func (u *UserImpl) GetApiV1Users(ctx context.Context, request GetApiV1UsersReque
 		Age:      &age,
 	})
 
-	return GetApiV1Users200JSONResponse(result), nil
+	return GetUser200JSONResponse(result), nil
 }

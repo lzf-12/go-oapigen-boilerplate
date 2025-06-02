@@ -23,8 +23,8 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Get all orders
-	// (GET /orders)
-	GetOrders(c *gin.Context)
+	// (GET /order)
+	GetOrder(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -36,8 +36,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetOrders operation middleware
-func (siw *ServerInterfaceWrapper) GetOrders(c *gin.Context) {
+// GetOrder operation middleware
+func (siw *ServerInterfaceWrapper) GetOrder(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -46,7 +46,7 @@ func (siw *ServerInterfaceWrapper) GetOrders(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetOrders(c)
+	siw.Handler.GetOrder(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -76,19 +76,19 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/orders", wrapper.GetOrders)
+	router.GET(options.BaseURL+"/order", wrapper.GetOrder)
 }
 
-type GetOrdersRequestObject struct {
+type GetOrderRequestObject struct {
 }
 
-type GetOrdersResponseObject interface {
-	VisitGetOrdersResponse(w http.ResponseWriter) error
+type GetOrderResponseObject interface {
+	VisitGetOrderResponse(w http.ResponseWriter) error
 }
 
-type GetOrders200JSONResponse []Order
+type GetOrder200JSONResponse []Order
 
-func (response GetOrders200JSONResponse) VisitGetOrdersResponse(w http.ResponseWriter) error {
+func (response GetOrder200JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
@@ -98,8 +98,8 @@ func (response GetOrders200JSONResponse) VisitGetOrdersResponse(w http.ResponseW
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Get all orders
-	// (GET /orders)
-	GetOrders(ctx context.Context, request GetOrdersRequestObject) (GetOrdersResponseObject, error)
+	// (GET /order)
+	GetOrder(ctx context.Context, request GetOrderRequestObject) (GetOrderResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -114,15 +114,15 @@ type strictHandler struct {
 	middlewares []StrictMiddlewareFunc
 }
 
-// GetOrders operation middleware
-func (sh *strictHandler) GetOrders(ctx *gin.Context) {
-	var request GetOrdersRequestObject
+// GetOrder operation middleware
+func (sh *strictHandler) GetOrder(ctx *gin.Context) {
+	var request GetOrderRequestObject
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetOrders(ctx, request.(GetOrdersRequestObject))
+		return sh.ssi.GetOrder(ctx, request.(GetOrderRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetOrders")
+		handler = middleware(handler, "GetOrder")
 	}
 
 	response, err := handler(ctx, request)
@@ -130,8 +130,8 @@ func (sh *strictHandler) GetOrders(ctx *gin.Context) {
 	if err != nil {
 		ctx.Error(err)
 		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(GetOrdersResponseObject); ok {
-		if err := validResponse.VisitGetOrdersResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(GetOrderResponseObject); ok {
+		if err := validResponse.VisitGetOrderResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {
@@ -142,11 +142,12 @@ func (sh *strictHandler) GetOrders(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/2xRvW7zMAx8FYPfNxqx227eAhQoMqV70UGxmYSBJaoUXSAI9O4Fpfx06OTDkUffnS4w",
-	"so8cMGiC4QJpPKJ3BW5lQjEQhSOKEhbaeV6CGtJzRBggLH6HArkFmn7RSYXCwegloWz+GuUWBL8WEpxg",
-	"+DD5fbm9/eezval4d8JRIZuMwp7LQdLZZsVr88reUWjW7xto4RslEQcY4GnVr3ozwhGDiwQDvBSqhej0",
-	"WFJ1bBcKPGBJZ5mdEgezDm+o27phnlPkkGodz31vn5GDYq3FxTjTWKTdKZmDW62GSNEX4X/BPQzwr3s8",
-	"QHdtv6vV53t0J+LONfmEaRSKWqOtm5mSNrxvrv5tJS3eOzlX142b58cw558AAAD//2iJTJDxAQAA",
+	"H4sIAAAAAAAC/2yQwW7yQAyEXyXy/x8jEtrb3pAqVZzaO+KwJAaMsuut10FCKO9eedNADz3F8mTWM98d",
+	"Og6JI0bN4O6QuzMGX8YP6VFsSMIJRQnL2gceo9qkt4TgII7hgAJTDdT/WmcViidbjxll+5c01SD4NZJg",
+	"D25n9sfP9XJnXy8uPlywU5jMRvHI5UHSwbSStXrj4ClWm88t1HBFycQRHKxX7aq1IJww+kTg4LWsakhe",
+	"z6VVw0vbE5ZyVtkrcbTk8I4647DEOXHMM4yXtrVPx1FxhuJTGqgrzuaS7f4C1SZSDMX4X/AIDv41T/zN",
+	"D/tmvjQ9insRf5t795g7oaRzsU01UNaKj1VJnwvRPIbg5TaHrvwwPEVTUQwMuN0dRhnAQeMTNdc1TPvp",
+	"OwAA//+xjRXFDQIAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
