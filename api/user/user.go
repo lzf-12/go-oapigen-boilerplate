@@ -2,10 +2,13 @@ package user
 
 import (
 	"context"
+	"oapi-to-rest/pkg/db"
 	"sync"
 )
 
 type UserImpl struct {
+	Db *db.SQLite
+
 	Users  map[int64]User
 	NextId int64
 	Lock   sync.Mutex

@@ -1,11 +1,14 @@
 package order
 
-import "context"
+import (
+	"context"
+	"oapi-to-rest/pkg/db"
+)
 
 type OrderImpl struct {
-	Orders map[int64]Order
+	Db *db.SQLite
 
-	// add dependency here
+	Orders map[int64]Order
 }
 
 var _ StrictServerInterface = (*OrderImpl)(nil)

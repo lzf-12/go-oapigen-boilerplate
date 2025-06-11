@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"oapi-to-rest/api/order"
 	"oapi-to-rest/api/user"
+	"oapi-to-rest/pkg/env"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,12 +19,14 @@ type Server struct {
 }
 
 // creates a new server instance
-func NewServer() *Server {
+func NewServer(cfg *env.Config) *Server {
 
-	userImpl := user.UserImpl{}
+	dep := InitDependencies(cfg)
+
+	userImpl := user.UserImpl{Db: dep.DbSqlite}
 	userStrictHandler := user.NewStrictHandler(&userImpl, []user.StrictMiddlewareFunc{})
 
-	orderImpl := order.OrderImpl{}
+	orderImpl := order.OrderImpl{Db: dep.DbSqlite}
 	orderStrictHandler := order.NewStrictHandler(&orderImpl, []order.StrictMiddlewareFunc{})
 
 	return &Server{
