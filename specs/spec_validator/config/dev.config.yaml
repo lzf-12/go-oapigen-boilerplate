@@ -16,7 +16,7 @@ specs:
     description: "Order Api endpoint"
     
   - name: "user-api"
-    file_path: "./specs/api/v1/users.yaml"
+    file_path: "./specs/api/v1/user.yaml"
     base_path: "/api/v1/users"
     enabled: true
     description: "User management API"
