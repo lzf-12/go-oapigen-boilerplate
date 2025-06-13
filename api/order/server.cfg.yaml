@@ -1,6 +1,0 @@
-package: order
-generate:
-  gin-server: true
-  strict-server: true
-  embedded-spec: true
-output: order-server.gen.go
