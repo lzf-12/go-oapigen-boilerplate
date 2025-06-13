@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"oapi-to-rest/api/auth"
 	"oapi-to-rest/api/order"
 	"oapi-to-rest/api/user"
 	"oapi-to-rest/pkg/env"
@@ -16,6 +16,7 @@ type Server struct {
 	// add dependencies here (DB clients, services, etc.)
 	User  user.ServerInterface
 	Order order.ServerInterface
+	Auth  auth.ServerInterface
 }
 
 // creates a new server instance
@@ -29,11 +30,15 @@ func NewServer(cfg *env.Config) *Server {
 	orderImpl := order.OrderImpl{Db: dep.DbSqlite}
 	orderStrictHandler := order.NewStrictHandler(&orderImpl, []order.StrictMiddlewareFunc{})
 
+	authImpl := auth.AuthImpl{Db: dep.DbSqlite}
+	authStrictHandler := auth.NewStrictHandler(&authImpl, []auth.StrictMiddlewareFunc{})
+
 	return &Server{
 		Router: gin.New(),
 
 		User:  userStrictHandler,
 		Order: orderStrictHandler,
+		Auth:  authStrictHandler,
 	}
 }
 
@@ -47,14 +52,9 @@ func (s *Server) RegisterRoutes() {
 
 	user.RegisterHandlers(v1, s.User)
 	order.RegisterHandlers(v1, s.Order)
+	auth.RegisterHandlers(v1, s.Auth)
 }
 
 func (s *Server) Start(addr string) error {
 	return s.Router.Run(addr)
-}
-
-func (s *Server) PrintRoutes() {
-	for _, route := range s.Router.Routes() {
-		fmt.Printf("%s %s\n", route.Method, route.Path)
-	}
 }

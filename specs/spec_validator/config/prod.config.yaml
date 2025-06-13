@@ -10,14 +10,23 @@ validation:
 
 specs:
   - name: "order-api"
-    file_path: "./specs/v1/order.yaml"
-    base_path: "/api/v1/order"
+    file_path: "./specs/api/v1/order.yaml"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/order"
     enabled: true
     description: "Order Api endpoint"
     
   - name: "user-api"
-    file_path: "./specs/user.yaml"
-    base_path: "/api/v1/user"
+    file_path: "./specs/api/v1/user.yaml"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/user"
     enabled: true
     description: "User management API"
+
+  - name: "auth-api"
+    file_path: "./specs/api/v1/auth.yaml"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/auth"
+    enabled: true
+    description: "Auth management API"
   

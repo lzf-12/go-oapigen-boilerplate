@@ -14,7 +14,7 @@ import (
 var defaultDDL []byte
 
 func main() {
-	dbPath := flag.String("db", "/data/app.db", "path to sqlite db")
+	dbPath := flag.String("db", "./data/app.db", "path to sqlite db")
 	flag.Parse()
 
 	db, err := sql.Open("sqlite3", *dbPath)

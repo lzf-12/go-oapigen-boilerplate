@@ -18,7 +18,11 @@ func main() {
 	server := api.NewServer(config)
 
 	// init spec validator to validate based on spec definition
-	svCfg := svcfg.SpecValidationConfigDevFile // change based on env
+	var svCfg []byte
+	svCfg = svcfg.SpecValidationConfigDevFile
+	if config.Env == env.Production.String() {
+		svCfg = svcfg.SpecValidationConfigProdFile
+	}
 	msv := spec_validator.NewMultiSpecValidator(svCfg)
 
 	err = msv.LoadValidationSpecsFromConfigFile()

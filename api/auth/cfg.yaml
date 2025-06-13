@@ -1,0 +1,9 @@
+package: auth
+generate:
+  gin-server: true
+  strict-server: true
+  embedded-spec: true
+  models: true
+output: auth.gen.go
+import-mapping:
+  specs/api/common/response.yaml: "oapi-to-rest/api/common"

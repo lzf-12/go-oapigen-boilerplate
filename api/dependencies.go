@@ -34,7 +34,7 @@ func InitDependencies(cfg *env.Config) Dependencies {
 		}
 		err = dep.DbSqlite.IsReady()
 		if err != nil {
-			log.Fatalf("error slite not ready: %v", err)
+			log.Fatalf("error sqlite not ready: %v", err)
 		}
 	}
 

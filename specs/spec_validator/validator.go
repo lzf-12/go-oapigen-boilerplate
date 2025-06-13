@@ -13,13 +13,14 @@ import (
 	"github.com/pb33f/libopenapi"
 	validator "github.com/pb33f/libopenapi-validator"
 	validatorError "github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/libopenapi/datamodel"
 	"gopkg.in/yaml.v2"
 )
 
 type SpecValidator struct {
 	Validator   validator.Validator
 	Name        string
-	BasePath    string
+	RoutePath   string
 	Version     string
 	Description string
 }
@@ -37,9 +38,11 @@ type ValidationConfig struct {
 }
 
 type SpecConfig struct {
-	Name        string `yaml:"name" json:"name"`
-	FilePath    string `yaml:"file_path" json:"file_path"`
-	BasePath    string `yaml:"base_path" json:"base_path"`
+	Name            string `yaml:"name" json:"name"`
+	FilePath        string `yaml:"file_path" json:"file_path"`
+	RelativeRefPath string `yaml:"relative_ref_path" json:"relative_ref_path"`
+	RoutePath       string `yaml:"route_path" json:"route_path"`
+	// BasePath        string `yaml:"base_path" json:"base_path"`// deprecated
 	Enabled     bool   `yaml:"enabled" json:"enabled"`
 	Description string `yaml:"description" json:"description"`
 }
@@ -82,7 +85,7 @@ func (msv *MultiSpecValidator) LoadSpecsFromDirectory(directory string) error {
 			specPath := filepath.Join(directory, file.Name())
 			specName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
 
-			if err := msv.LoadSpec(specName, specPath, ""); err != nil {
+			if err := msv.LoadSpec(specName, specPath, "", ""); err != nil {
 				return fmt.Errorf("failed to load spec %s: %w", specName, err)
 			}
 		}
@@ -91,7 +94,7 @@ func (msv *MultiSpecValidator) LoadSpecsFromDirectory(directory string) error {
 	return nil
 }
 
-func (msv *MultiSpecValidator) LoadSpec(name, filePath, basePath string) error {
+func (msv *MultiSpecValidator) LoadSpec(name, filePath, routePath, relativeRefPath string) error {
 	msv.mu.Lock()
 	defer msv.mu.Unlock()
 
@@ -100,8 +103,11 @@ func (msv *MultiSpecValidator) LoadSpec(name, filePath, basePath string) error {
 		return fmt.Errorf("failed to read spec file: %w", err)
 	}
 
-	// parse the OpenAPI document
-	doc, err := libopenapi.NewDocument(specData)
+	doc, err := libopenapi.NewDocumentWithConfiguration(specData, &datamodel.DocumentConfiguration{
+		BasePath:            relativeRefPath, // locate reference link in spec
+		SpecFilePath:        filePath,
+		AllowFileReferences: true,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to parse OpenAPI document: %w", err)
 	}
@@ -131,15 +137,16 @@ func (msv *MultiSpecValidator) LoadSpec(name, filePath, basePath string) error {
 
 	// store the validator
 	msv.validators[name] = &SpecValidator{
-		Validator:   v,
-		Name:        name,
-		BasePath:    basePath,
+		Validator: v,
+		Name:      name,
+
+		RoutePath:   routePath,
 		Description: description,
 	}
 
-	// auto-map routes based on basePath if provided
-	if basePath != "" {
-		msv.routeMapping[basePath] = name
+	// auto-map routes based on routePath if provided
+	if routePath != "" {
+		msv.routeMapping[routePath] = name
 	}
 
 	return nil
@@ -159,7 +166,7 @@ func (msv *MultiSpecValidator) LoadValidationSpecsFromConfigFile() error {
 			continue
 		}
 
-		if err := msv.LoadSpec(spec.Name, spec.FilePath, spec.BasePath); err != nil {
+		if err := msv.LoadSpec(spec.Name, spec.FilePath, spec.RoutePath, spec.RelativeRefPath); err != nil {
 			return fmt.Errorf("failed to load spec %s: %w", spec.Name, err)
 		}
 	}

@@ -1,0 +1,133 @@
+openapi: 3.0.0
+info:
+  title: Authentication API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /register:
+    post:
+      summary: register new user body request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: register new user response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '500':
+          description: internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /login:
+    post:
+      summary: login with credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: login with creds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: email or password wrong 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BaseSuccessResponse:
+      type: object
+      required:
+        - message
+        - status_code
+      properties:
+        message:
+          type: string
+        status_code:
+          type: integer
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - status_code
+        - error
+        - trace
+      properties:
+        message:
+          type: string
+        status_code:
+          type: integer
+        error_code:
+          type: string
+        error:
+          type: string
+        trace:
+          type: string
+    RegisterResponse:
+      allOf:
+       - $ref: '../common/response.yaml#/components/schemas/BaseSuccessResponse'
+       - type: object
+         required:
+          - data
+         properties:
+            data:
+              properties:
+                email:
+                  type: string
+    LoginResponse:
+      allOf:
+       - $ref: '../common/response.yaml#/components/schemas/BaseSuccessResponse'
+       - type: object
+         properties:
+            data:
+              properties:
+                email:
+                  type: string
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - first_name
+        - last_name
+        - password
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password

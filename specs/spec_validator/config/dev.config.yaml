@@ -2,7 +2,7 @@
 
 validation:
   enabled: true
-  validate_responses: true # default enabled in development environment
+  validate_responses: false
   skip_paths: # skip validation middleware
     "/health": true
     "/metrics": true
@@ -11,12 +11,21 @@ validation:
 specs:
   - name: "order-api"
     file_path: "./specs/api/v1/order.yaml"
-    base_path: "/api/v1/order"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/order"
     enabled: true
     description: "Order Api endpoint"
     
   - name: "user-api"
     file_path: "./specs/api/v1/user.yaml"
-    base_path: "/api/v1/users"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/user"
     enabled: true
     description: "User management API"
+
+  - name: "auth-api"
+    file_path: "./specs/api/v1/auth.yaml"
+    relative_ref_path: "./specs/api/common"
+    route_path: "/api/v1/auth"
+    enabled: true
+    description: "Auth management API"

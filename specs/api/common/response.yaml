@@ -1,0 +1,12 @@
+components:
+  schemas:
+    BaseSuccessResponse:
+      type: object
+      required:
+        - message
+        - status_code
+      properties:
+        message:
+          type: string
+        status_code:
+          type: integer
