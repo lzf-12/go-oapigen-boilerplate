@@ -1,6 +1,0 @@
-package: user
-generate:
-  gin-server: true
-  strict-server: true
-  embedded-spec: true
-output: user-server.gen.go

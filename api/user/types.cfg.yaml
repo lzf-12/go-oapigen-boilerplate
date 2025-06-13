@@ -1,4 +1,0 @@
-package: user
-generate:
-  models: true
-output: user-types.gen.go

@@ -15,10 +15,19 @@ import (
 	"path"
 	"strings"
 
+	externalRef0 "oapi-to-rest/api/common"
+
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
 )
+
+// Order defines model for Order.
+type Order struct {
+	Amount float32 `json:"amount"`
+	Id     string  `json:"id"`
+	UserId string  `json:"userId"`
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -187,6 +196,12 @@ func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
 		res[pathToFile] = rawSpec
 	}
 
+	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "specs/api/common/response.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
 	return res
 }
 

@@ -15,11 +15,58 @@ import (
 	"path"
 	"strings"
 
+	externalRef0 "oapi-to-rest/api/common"
+
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for CreateUserRequestRole.
+const (
+	Admin  CreateUserRequestRole = "admin"
+	Member CreateUserRequestRole = "member"
+)
+
+// CreateUserRequest defines model for CreateUserRequest.
+type CreateUserRequest struct {
+	Age      *int                  `json:"age,omitempty"`
+	Email    openapi_types.Email   `json:"email"`
+	Role     CreateUserRequestRole `json:"role"`
+	Username string                `json:"username"`
+}
+
+// CreateUserRequestRole defines model for CreateUserRequest.Role.
+type CreateUserRequestRole string
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	ErrorCode *string `json:"error_code,omitempty"`
+	Message   *string `json:"message,omitempty"`
+}
+
+// User defines model for User.
+type User struct {
+	Age      *int    `json:"age,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Id       *int64  `json:"id,omitempty"`
+	Role     *string `json:"role,omitempty"`
+	Username *string `json:"username,omitempty"`
+}
+
+// GetUserParams defines parameters for GetUser.
+type GetUserParams struct {
+	// Role role to filter by
+	Role *string `form:"role,omitempty" json:"role,omitempty"`
+
+	// Limit maximum number of results to return
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = CreateUserRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -306,6 +353,12 @@ func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
 		res[pathToFile] = rawSpec
 	}
 
+	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "specs/api/common/response.yaml")) {
+		if _, ok := res[rawPath]; ok {
+			// it is not possible to compare functions in golang, so always overwrite the old value
+		}
+		res[rawPath] = rawFunc
+	}
 	return res
 }
 

@@ -1,0 +1,9 @@
+package: order
+generate:
+  gin-server: true
+  strict-server: true
+  embedded-spec: true
+  models: true
+output: order.gen.go
+import-mapping:
+  specs/api/common/response.yaml: "oapi-to-rest/api/common"
