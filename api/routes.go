@@ -2,7 +2,6 @@ package api
 
 import (
 	"oapi-to-rest/api/auth"
-	"oapi-to-rest/api/order"
 	"oapi-to-rest/api/user"
 	"oapi-to-rest/pkg/env"
 	"oapi-to-rest/pkg/errlib"
@@ -16,9 +15,8 @@ type Server struct {
 	Router *gin.Engine
 
 	// add dependencies here (DB clients, services, etc.)
-	User  user.ServerInterface
-	Order order.ServerInterface
-	Auth  auth.ServerInterface
+	User user.ServerInterface
+	Auth auth.ServerInterface
 
 	// standardized error handler
 	ErrorHandler errlib.ErrorHandler
@@ -32,9 +30,6 @@ func NewServer(cfg *env.Config) *Server {
 	userImpl := user.UserImpl{Db: dep.DbSqlite}
 	userStrictHandler := user.NewStrictHandler(&userImpl, []user.StrictMiddlewareFunc{})
 
-	orderImpl := order.OrderImpl{Db: dep.DbSqlite}
-	orderStrictHandler := order.NewStrictHandler(&orderImpl, []order.StrictMiddlewareFunc{})
-
 	authImpl := auth.AuthImpl{Db: dep.DbSqlite}
 	authStrictHandler := auth.NewStrictHandler(&authImpl, []auth.StrictMiddlewareFunc{})
 
@@ -42,9 +37,8 @@ func NewServer(cfg *env.Config) *Server {
 		Config: cfg,
 		Router: gin.New(),
 
-		User:  userStrictHandler,
-		Order: orderStrictHandler,
-		Auth:  authStrictHandler,
+		User: userStrictHandler,
+		Auth: authStrictHandler,
 
 		ErrorHandler: *dep.ErrorHandler,
 	}
@@ -62,7 +56,6 @@ func (s *Server) RegisterRoutes() {
 	v1 := api.Group("v1")
 
 	user.RegisterHandlers(v1, s.User)
-	order.RegisterHandlers(v1, s.Order)
 	auth.RegisterHandlers(v1, s.Auth)
 }
 
