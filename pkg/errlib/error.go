@@ -37,6 +37,15 @@ func NewAppError(code string) *AppError {
 	}
 }
 
+func NewAppErrorWithDetailsAndLog(err error, code string, details map[string]interface{}) *AppError {
+	log.Println(fmt.Errorf("error: %w", err))
+
+	if err != nil {
+		details["error"] = err.Error()
+	}
+	return NewAppErrorWithDetails(code, details)
+}
+
 // create error with additional details
 func NewAppErrorWithDetails(code string, details map[string]interface{}) *AppError {
 	err := NewAppError(code)

@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"net/http"
 	"oapi-to-rest/pkg/db"
@@ -120,7 +118,7 @@ func (a *AuthImpl) PostLogin(ctx context.Context, request PostLoginRequestObject
 	}
 
 	// generate refresh token
-	refreshToken, err := generateRefreshToken()
+	refreshToken, err := a.Jwt.GenerateRefreshToken()
 	if err != nil {
 		return PostLogin500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
 	}
@@ -166,18 +164,22 @@ func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestOb
 	refreshToken := request.Body.RefreshToken
 	// check refresh token
 	row := a.Db.DB.QueryRowContext(ctx, `
-		SELECT us.user_id, us.user_agent, us.is_valid, us.expires_at, u.email
+		SELECT us.user_id, us.user_agent, us.is_valid, us.expires_at, us.access_token, u.email, 
 		FROM user_sessions us
 		LEFT JOIN users u ON us.user_id = u.id
 		WHERE refresh_token = $1;
 	`, refreshToken)
 
-	var userID string
-	var userAgent string
-	var isValid int
-	var expiresAt time.Time
-	var userEmail string
-	if err := row.Scan(&userID, &userAgent, &isValid, &expiresAt, &userEmail); err != nil {
+	var (
+		userID    string
+		userAgent string
+		isValid   int
+		expiresAt time.Time
+		userEmail string
+		token     string
+	)
+
+	if err := row.Scan(&userID, &userAgent, &isValid, &expiresAt, &token, &userEmail); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return PostRefresh401JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInvalidRefreshToken)
 		}
@@ -189,12 +191,12 @@ func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestOb
 	}
 
 	// generate new jwt and rotate refresh token
-	newToken, err := a.Jwt.GenerateJWT(jwt.CreateUserClaims(userID, userEmail, "", []string{}))
+	newToken, err := a.Jwt.RefreshJWT(token)
 	if err != nil {
 		return PostRefresh500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
 	}
 
-	newRefresh, err := generateRefreshToken()
+	newRefresh, err := a.Jwt.GenerateRefreshToken()
 	if err != nil {
 		return PostRefresh500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
 	}
@@ -206,7 +208,6 @@ func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestOb
 	defer tx.Rollback()
 
 	// invalidate old session
-	// store session with refresh token
 	if _, err = tx.ExecContext(ctx, `
 		UPDATE user_sessions
 		SET is_valid = 0
@@ -229,7 +230,6 @@ func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestOb
 	if err := tx.Commit(); err != nil {
 		return PostRefresh500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeDBTransaction)
 	}
-	// return
 
 	resp := RefreshResponse{
 		Message:      "token refreshed",
@@ -239,13 +239,4 @@ func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestOb
 	}
 
 	return PostRefresh200JSONResponse(resp), nil
-}
-
-func generateRefreshToken() (string, error) {
-	bytes := make([]byte, 32)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
 }

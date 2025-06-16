@@ -1,9 +1,11 @@
 package jwt
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -58,6 +60,15 @@ func (tm *TokenManager) GenerateJWT(claims jwt.MapClaims) (string, error) {
 	default:
 		return "", errors.New("unsupported algorithm")
 	}
+}
+
+func (tm *TokenManager) GenerateRefreshToken() (string, error) {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 // refresh
