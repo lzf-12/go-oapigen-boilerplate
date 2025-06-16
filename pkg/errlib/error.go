@@ -1,6 +1,8 @@
 package errlib
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -9,6 +11,11 @@ type AppError struct {
 	Message string
 	Status  int
 	Details map[string]interface{}
+}
+
+func NewAppErrorWithLog(err error, code string) *AppError {
+	log.Println(fmt.Errorf("error: %w", err))
+	return NewAppError(code)
 }
 
 // helper to create errors from registry

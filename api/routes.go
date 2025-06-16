@@ -5,18 +5,23 @@ import (
 	"oapi-to-rest/api/order"
 	"oapi-to-rest/api/user"
 	"oapi-to-rest/pkg/env"
+	"oapi-to-rest/pkg/errlib"
 
 	"github.com/gin-gonic/gin"
 )
 
 // represents the API server with all dependencies
 type Server struct {
+	Config *env.Config
 	Router *gin.Engine
 
 	// add dependencies here (DB clients, services, etc.)
 	User  user.ServerInterface
 	Order order.ServerInterface
 	Auth  auth.ServerInterface
+
+	// standardized error handler
+	ErrorHandler errlib.ErrorHandler
 }
 
 // creates a new server instance
@@ -34,11 +39,14 @@ func NewServer(cfg *env.Config) *Server {
 	authStrictHandler := auth.NewStrictHandler(&authImpl, []auth.StrictMiddlewareFunc{})
 
 	return &Server{
+		Config: cfg,
 		Router: gin.New(),
 
 		User:  userStrictHandler,
 		Order: orderStrictHandler,
 		Auth:  authStrictHandler,
+
+		ErrorHandler: *dep.ErrorHandler,
 	}
 }
 
@@ -46,6 +54,9 @@ func (s *Server) RegisterRoutes() {
 
 	s.Router.Use(gin.Logger())
 	s.Router.Use(gin.Recovery())
+
+	// standardized error response middleware
+	s.Router.Use(errlib.ErrorHandlerGinMiddleware(s.ErrorHandler))
 
 	api := s.Router.Group("api")
 	v1 := api.Group("v1")

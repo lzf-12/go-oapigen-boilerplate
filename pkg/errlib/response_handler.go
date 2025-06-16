@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"oapi-to-rest/pkg/trace"
+	"oapi-to-rest/pkg/errlib/trace"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
 )
@@ -27,12 +28,19 @@ func NewErrorHandler(debug bool) *ErrorHandler {
 	return &ErrorHandler{debug: debug}
 }
 
-func (eh *ErrorHandler) HandleError(w http.ResponseWriter, r *http.Request, err error) {
+func (eh *ErrorHandler) HandleError(r *http.Request, err error) ErrorResponse {
+
 	var appErr *AppError
 	var status int
 	var errResp ErrorResponse
 	var dbErrRef string
 	var isDBErr bool
+
+	// intercept gin error
+	ginErr, ok := err.(*gin.Error)
+	if ok {
+		err = ginErr.Err
+	}
 
 	// type assertion to determine error type
 	switch e := err.(type) {
@@ -82,9 +90,12 @@ func (eh *ErrorHandler) HandleError(w http.ResponseWriter, r *http.Request, err 
 		Type:      eh.defaultErrRef,
 		Title:     appErr.Message,
 		Status:    status,
-		Instance:  r.URL.Path,
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		TraceID:   trace.GetTraceIDFromContext(r.Context()),
+	}
+
+	if r != nil {
+		errResp.Instance = r.URL.Path
+		errResp.TraceID = trace.GetTraceIDFromContext(r.Context())
 	}
 
 	// replace error reference with default value if empty
@@ -99,12 +110,19 @@ func (eh *ErrorHandler) HandleError(w http.ResponseWriter, r *http.Request, err 
 
 	// force include details if client 4xx errors
 	if status >= 400 && status < 500 && appErr.Details != nil {
-		errResp.Detail = fmt.Sprintf("Additional details: %v", appErr.Details)
+		errResp.Detail = fmt.Sprintf("%v", appErr.Details)
 	}
+
+	return errResp
+}
+
+func (eh *ErrorHandler) HandleAndSendErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+
+	errResp := eh.HandleError(r, err)
 
 	// response headers
 	w.Header().Set("Content-Type", "application/problem+json")
-	w.WriteHeader(status)
+	w.WriteHeader(errResp.Status)
 
 	// encode and send response
 	if err := json.NewEncoder(w).Encode(errResp); err != nil {
@@ -114,6 +132,7 @@ func (eh *ErrorHandler) HandleError(w http.ResponseWriter, r *http.Request, err 
 }
 
 func (eh *ErrorHandler) handleDatabaseError(err error) *AppError {
+
 	// handle sql.ErrNoRows specifically
 	if err == sql.ErrNoRows {
 		return NewAppError(ErrCodeStorageNotFound)

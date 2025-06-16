@@ -17,6 +17,7 @@ type Config struct {
 	InitSqlite bool
 	SqlitePath string
 	Env        string
+	DebugMode  bool
 }
 
 type Environment int
@@ -50,6 +51,7 @@ func LoadConfig(path string) (*Config, error) {
 		InitSqlite: getEnv("INIT_SQLITE", "true").Bool(),
 		SqlitePath: getEnv("SQLITE_PATH", "data/app.db").String(),
 		Env:        getEnv("ENV", "").String(),
+		DebugMode:  getEnv("DEBUG_MODE", "").Bool(),
 	}
 
 	return cfg, nil

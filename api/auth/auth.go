@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"oapi-to-rest/pkg/db"
+	"oapi-to-rest/pkg/errlib"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,24 +21,12 @@ func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequest
 
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(request.Body.Password), bcrypt.DefaultCost)
 	if err != nil {
-		errRsp := ErrorResponse{
-			Error:      fmt.Sprintf("error: %v", err),
-			StatusCode: http.StatusInternalServerError,
-			Trace:      "",
-			Message:    "something went wrong during hashing",
-		}
-		return PostRegister500JSONResponse(errRsp), err
+		return PostRegister500JSONResponse{}, err
 	}
 
 	tx, err := a.Db.DB.BeginTx(ctx, nil)
 	if err != nil {
-		errRsp := ErrorResponse{
-			Error:      fmt.Sprintf("error: %v", err),
-			StatusCode: http.StatusInternalServerError,
-			Trace:      "",
-			Message:    "something went wrong during init db transaction",
-		}
-		return PostRegister500JSONResponse(errRsp), err
+		return PostRegister500JSONResponse{}, err
 	}
 
 	var userID int64
@@ -59,30 +47,18 @@ func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequest
 	}
 
 	// insert into auth_credentials table
-	_, err = tx.ExecContext(ctx, `
+	if _, err = tx.ExecContext(ctx, `
 		INSERT INTO auth_credentials (user_id, provider, password_hash)
 		VALUES (?, 'local', ?)`,
 		userID, string(hashPassword),
-	)
-	if err != nil {
+	); err != nil {
 		tx.Rollback()
-		errRsp := ErrorResponse{
-			Error:      fmt.Sprintf("error: %v", err),
-			StatusCode: http.StatusInternalServerError,
-			Trace:      "",
-			Message:    "something went wrong during db transaction",
-		}
-		return PostRegister500JSONResponse(errRsp), err
+		return PostRegister500JSONResponse{}, err
 	}
 
 	// commit transaction
 	if err := tx.Commit(); err != nil {
-		errRsp := ErrorResponse{
-			Error:      fmt.Sprintf("error: %v", err),
-			StatusCode: http.StatusInternalServerError,
-			Message:    "something went wrong during db transaction",
-		}
-		return PostRegister500JSONResponse(errRsp), err
+		return PostRegister500JSONResponse{}, err
 	}
 
 	resp := RegisterResponse{
@@ -98,39 +74,31 @@ func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequest
 
 func (a *AuthImpl) PostLogin(ctx context.Context, request PostLoginRequestObject) (PostLoginResponseObject, error) {
 
-	var errRsp ErrorResponse
-
 	// check email exist
 	row := a.Db.DB.QueryRowContext(ctx, `
-	SELECT id, email
-	FROM users 
-	WHERE email = $1 
-	ORDER BY created_at DESC 
-	LIMIT 1;
+	SELECT u.id, u.email, ac.password_hash FROM users u
+	LEFT join auth_credentials ac 
+	WHERE u.email = $1 order by created_at desc limit 1;
 `, request.Body.Email)
 
 	var userID int
 	var email string
 	var hashedPassword string
-	if err := row.Scan(&userID, email, &hashedPassword); err != nil {
+	if err := row.Scan(&userID, &email, &hashedPassword); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			errRsp.Message = "invalid email or password"
-			errRsp.StatusCode = http.StatusUnauthorized
-			errRsp.Error = "unauthorized"
-			return PostLogin401JSONResponse(errRsp), nil
+			// email not found
+			return PostLogin401JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInvalidEmailOrPassword)
 		}
-		errRsp.Message = "invalid email or password"
-		errRsp.StatusCode = http.StatusUnauthorized
-		errRsp.Error = "unauthorized"
-		return PostLogin500JSONResponse{}, err
+		return PostLogin500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeDBQuery)
 	}
 
 	// compare hash with bcrypt
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(request.Body.Password)); err != nil {
-		errRsp.Message = "invalid email or password"
-		errRsp.StatusCode = http.StatusUnauthorized
-		errRsp.Error = "unauthorized"
-		return PostLogin401JSONResponse(errRsp), nil
+
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return PostLogin401JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInvalidEmailOrPassword)
+		}
+		return PostLogin500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
 	}
 
 	resp := LoginResponse{Data: &struct {

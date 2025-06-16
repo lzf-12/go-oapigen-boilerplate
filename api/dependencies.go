@@ -4,15 +4,20 @@ import (
 	"log"
 	"oapi-to-rest/pkg/db"
 	"oapi-to-rest/pkg/env"
+	"oapi-to-rest/pkg/errlib"
 )
 
 type Dependencies struct {
-	DbSqlite *db.SQLite
+	DbSqlite     *db.SQLite
+	ErrorHandler *errlib.ErrorHandler
 }
 
 func InitDependencies(cfg *env.Config) Dependencies {
 
 	var dep Dependencies
+
+	// errorHandler
+	dep.ErrorHandler = errlib.NewErrorHandler(cfg.DebugMode)
 
 	// db
 	if cfg.InitSqlite {

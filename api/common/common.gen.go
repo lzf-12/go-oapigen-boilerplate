@@ -21,12 +21,25 @@ type BaseSuccessResponse struct {
 	StatusCode int    `json:"status_code"`
 }
 
+// StandardErrorResponse defines model for StandardErrorResponse.
+type StandardErrorResponse struct {
+	Details   *string                 `json:"details,omitempty"`
+	Errors    *map[string]interface{} `json:"errors,omitempty"`
+	Instance  *string                 `json:"instance,omitempty"`
+	Status    *int                    `json:"status,omitempty"`
+	Timestamp *string                 `json:"timestamp,omitempty"`
+	Title     *string                 `json:"title,omitempty"`
+	TraceId   *string                 `json:"trace_id,omitempty"`
+	Type      *string                 `json:"type,omitempty"`
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/1SMQU7FMBBD7+J1TpAlR4AlQijkmzaonRkykwWqcnfUIhB/Z/n5+UDV3VQo4cgHvK7c",
-	"yxUfivNp1Er3R7qpOM/auhp7NF6jne5luUB8GZHh0ZssmAkeJYa/Vr39502CCzvmTOj8HK3zhvz893Tv",
-	"vaRfT98+WAPz9Jq8K7KMbUtQoxRryECClVj9h8zvAAAA///DjOs02wAAAA==",
+	"H4sIAAAAAAAC/3yPwUoEMQyG3yXnPsEcBe/iHkWW2MbdyDSpSeYgS99dpqKsbPVW8vX78+cCWWtTIQmH",
+	"5QKez1RxPO/Q6bDlTO6P5E3FaR8300YWTONTJXc8DRAfjWABD2M5QU/ggbH5MWu55ixBJzLoPYHR+8ZG",
+	"BZann6Tf3nP69vTljXLsuYdAKWjl3kzt72qFAnn1aTXa1YGwFA5WwfXh2u6TvSweKPm/Y2d3Jgiu5IG1",
+	"Tc3gWOeZYZjpyGUOx+AG3Bbvo/qrwiLbuibQRoKNYQFI0DDO/kX6ZwAAAP//4Rq8vwwCAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -22,6 +22,7 @@ common-config:
 	rm -f api/common/gen.go;\
 	[ -f api/common/gen.go ] || echo "//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=cfg.yaml ../../$(specpath)/response.yaml\n\npackage common\n" > api/common/gen.go
 
+	
 package-config:
 
 	@test -n "$(name)" || (echo "name= parameter is required"; exit 1)
@@ -34,7 +35,7 @@ package-config:
 	mkdir -p api/$(name)
 	PACKAGE=$(name);\
 	rm -f api/$(name)//cfg.yaml;\
-	[ -f api/$(name)/cfg.yaml ] || echo "package: $(name)\ngenerate:\n  gin-server: true\n  strict-server: true\n  embedded-spec: true\n  models: true\noutput: $(name).gen.go\nimport-mapping:\n  specs/api/common/response.yaml: \"oapi-to-rest/api/common\"" > api/$(name)/cfg.yaml;\
+	[ -f api/$(name)/cfg.yaml ] || echo "package: $(name)\ngenerate:\n  gin-server: true\n  strict-server: true\n  embedded-spec: true\n  models: true\noutput: $(name).gen.go\nimport-mapping:\n  ../common/response.yaml: \"oapi-to-rest/api/common\"" > api/$(name)/cfg.yaml;\
 	rm -f api/$(name)//gen.go;\
 	[ -f api/$(name)/gen.go ] || echo "//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=cfg.yaml ../../$(specpath)/$(name).yaml\n\npackage $(name)\n" > api/$(name)/gen.go
 

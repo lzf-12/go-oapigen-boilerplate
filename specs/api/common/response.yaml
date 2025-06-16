@@ -10,3 +10,24 @@ components:
           type: string
         status_code:
           type: integer
+
+    StandardErrorResponse:
+      type: object
+      properties:
+        type:
+          type: string
+        title: 
+          type: string
+        status:
+          type: integer
+        details:
+          type: string
+        instance:
+          type: string
+        timestamp:
+          type: string
+        trace_id:
+          type: string
+        errors:
+          type: object
+          additionalProperties: {}

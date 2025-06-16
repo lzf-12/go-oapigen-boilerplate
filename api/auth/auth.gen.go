@@ -171,7 +171,7 @@ func (response PostLogin401JSONResponse) VisitPostLoginResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostLogin500JSONResponse ErrorResponse
+type PostLogin500JSONResponse externalRef0.StandardErrorResponse
 
 func (response PostLogin500JSONResponse) VisitPostLoginResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -197,7 +197,7 @@ func (response PostRegister201JSONResponse) VisitPostRegisterResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostRegister500JSONResponse ErrorResponse
+type PostRegister500JSONResponse externalRef0.StandardErrorResponse
 
 func (response PostRegister500JSONResponse) VisitPostRegisterResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -297,16 +297,17 @@ func (sh *strictHandler) PostRegister(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RVTW/bMAz9Kwa3o1En+7j41gI7FBiwojsWhaHKTKLCFlWSbhAU+e+D5LhJEy9ttxbY",
-	"boIoko98j9QDWGoDefQqUD6A2AW2Jh2/MRNfogTygvEiMAVkdZjMGM3xoKuAUIIoOz+Hdd5bKks1jppb",
-	"FDHzcZuo0U72fZ1XnCPHB8rGjrmuc2C86xxjDeXVY46nETfQYAhznQ9h6OYWrcYE32nu/CXedSg6UnRr",
-	"XDOKPBiRJXH9PLY+xo7HERjb5pum+TGD8uoBPjLOoIQPxZa5YkNbIQGtVCa4ylLbkq94E6I6M4I/O2tR",
-	"5DHsOt+vrzZqXl71Opa2B/16ncMlzp0o8h+0ceZYtPKmHddHY45ZX8/BTrrd4M+Qs63vP+Bnt+zkfj3K",
-	"2euQHUD4i6F+0egego5+zs8ohXTaRNtppwv06qxRRz47vTiHHO6RxZGHEqYnk5NJREQBvQkOSvicriLf",
-	"ukiFFE2cvFQg9dKNZaZ45zWUcEGiaTihh42iZ1Sv4kNLXtEnHxNCs0FR3Ar57WqNp2MKebJ/9ghU7jBd",
-	"9CwkvJ8mk7fOPagvJq9RLLugfQNTb7Kl00VmGWuJvfwymb4ZgKdfzgiApPSMOBvmM1sy9Sr7+oaNeBZH",
-	"FC9702T9hxIfSNe2hleHXYqCNI2kRwVvVsdxgQ0L5p00tr+fXySz6Tuk/32Dhz5lHpdZJ8gZb7fiP8T1",
-	"Ic4bqlcZ73ZWkOMOSp9Dxw2UUJjgivtp3Ly/AgAA//8Pju6lgQkAAA==",
+	"H4sIAAAAAAAC/9RVTU8jMQz9K6PsHium3Y/L3EDaA9JKi+CI0Mgkbhs0kwTbQ1Wh+e+rZFpaSlpgtxy4",
+	"RXFsPz/bL49K+zZ4h05YVY+K9RxbSMdfRJ4ukYN3jPEikA9IYjGZMZrjQZYBVaVYyLqZ6keDpdbeYNbc",
+	"IjPM8jYWkI53fa0TnCHFB0Kgc679SBHed5bQqOr6KcfziCtoah3mZrQO42/vUEtM8NvPrLvE+w5ZMkW3",
+	"YJss8gDMC0/mdWxDjC2PAzA25EPT/Jmq6vpRfSWcqkp9KTedK1dtKzmg5hqCrbVvW+9qWoWoz4DxqtMa",
+	"mZ/C9qPd+gwIvL3qPpa2A/2mH6lLnFkWpH+gcWqJpXbQ5uejgUPW9/dgK9128Feas6nvE/Rnu+zkfpPt",
+	"2fuQvYDwH0v9ptXNtWE/5CsBZ4DMKxJmUMA2vF/EkgmMsWK9g+Zi27vPILKOBZw+RMMeWbMtskAbsp5i",
+	"pcnHTDpWW5M3povcKuwA7xP0qU+Ph1zqtJM5OrEaYu3F6cW5GqkHJLbeqUpNTsYn45jEB3QQrKrU93QV",
+	"V0fmqcyyiSKWaPeDCkT6Urxzoyp14VmSzqlhApDlzJtlfKi9E3TJB0JoVijKO/Zu80vF06FleyblO7sg",
+	"1GG6GGYj4f02Hh8793qRY3KDrMkGGQhM3BQLK/NCExqOXP4YT44G4PnoZwAk0Sg8FWupKxbkh8H5eUQi",
+	"3rukGaRxT8hBUwy/d3zAXdsCLV/yGEcWGk6PSlrp9OERXKv5B03h7mf4pkGcfED6/QSveSocLoqOkQra",
+	"fEGfahpeVnLrzbKgbe4ZKepY+qs7alSlSgi2fJjEj/BvAAAA///CCRwGEAsAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
@@ -346,7 +347,7 @@ func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
 		res[pathToFile] = rawSpec
 	}
 
-	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "specs/api/common/response.yaml")) {
+	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "../common/response.yaml")) {
 		if _, ok := res[rawPath]; ok {
 			// it is not possible to compare functions in golang, so always overwrite the old value
 		}
