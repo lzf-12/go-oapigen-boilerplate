@@ -2,9 +2,11 @@ package env
 
 import (
 	"log"
+	"oapi-to-rest/pkg/jwt"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -18,6 +20,8 @@ type Config struct {
 	SqlitePath string
 	Env        string
 	DebugMode  bool
+
+	Jwt jwt.JwtConfig
 }
 
 type Environment int
@@ -52,6 +56,12 @@ func LoadConfig(path string) (*Config, error) {
 		SqlitePath: getEnv("SQLITE_PATH", "data/app.db").String(),
 		Env:        getEnv("ENV", "").String(),
 		DebugMode:  getEnv("DEBUG_MODE", "").Bool(),
+
+		Jwt: jwt.JwtConfig{
+			PrivateKeyBase64: getEnv("JWT_PRIVATE_KEY", "").String(),
+			PublicKeyBase64:  getEnv("JWT_PUBLIC_KEY", "").String(),
+			ExpiresInSecond:  getEnv("JWT_EXPIRES_SECONDS", "").DurationInSecond(),
+		},
 	}
 
 	return cfg, nil
@@ -100,4 +110,14 @@ func (ev EnvVariable) StringSlice(sep string) []string {
 		return []string{}
 	}
 	return strings.Split(ev.stringVal, sep)
+}
+
+func (ev EnvVariable) DurationInSecond() time.Duration {
+
+	var dur time.Duration
+	dur, err := time.ParseDuration(ev.stringVal)
+	if err == nil {
+		return dur
+	}
+	return time.Second * 600
 }

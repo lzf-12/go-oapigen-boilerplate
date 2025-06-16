@@ -17,9 +17,11 @@ func ErrorHandlerGinMiddleware(eh ErrorHandler) gin.HandlerFunc {
 		}
 
 		if err == nil {
+			// continue
 			return
+		} else {
+			// override error response if error is not nil
+			eh.HandleAndSendErrorResponse(c.Writer, c.Request, err.Err)
 		}
-		// handle error response if error is not nil
-		eh.HandleAndSendErrorResponse(c.Writer, c.Request, err)
 	}
 }

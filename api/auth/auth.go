@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"oapi-to-rest/pkg/db"
 	"oapi-to-rest/pkg/errlib"
+	"oapi-to-rest/pkg/jwt"
+	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthImpl struct {
-	Db *db.SQLite
+	Db  *db.SQLite
+	Jwt *jwt.TokenManager
 }
 
 var _ StrictServerInterface = (*AuthImpl)(nil)
@@ -101,13 +104,24 @@ func (a *AuthImpl) PostLogin(ctx context.Context, request PostLoginRequestObject
 		return PostLogin500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
 	}
 
-	resp := LoginResponse{Data: &struct {
-		Email *string "json:\"email,omitempty\""
-	}{
-		Email: &request.Body.Email,
-	},
+	// generate jwt
+
+	token, err := a.Jwt.GenerateJWT(jwt.CreateUserClaims(strconv.Itoa(userID), "", email, []string{}))
+	if err != nil {
+		return PostLogin500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
+	}
+
+	resp := LoginResponse{
+		Data: &struct {
+			Email *string "json:\"email,omitempty\""
+			Token *string "json:\"token,omitempty\""
+		}{
+			Email: &request.Body.Email,
+			Token: &token,
+		},
 		Message:    "success login",
-		StatusCode: http.StatusOK}
+		StatusCode: http.StatusOK,
+	}
 
 	return PostLogin200JSONResponse(resp), nil
 }

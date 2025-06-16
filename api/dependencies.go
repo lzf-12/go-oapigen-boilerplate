@@ -5,11 +5,13 @@ import (
 	"oapi-to-rest/pkg/db"
 	"oapi-to-rest/pkg/env"
 	"oapi-to-rest/pkg/errlib"
+	"oapi-to-rest/pkg/jwt"
 )
 
 type Dependencies struct {
 	DbSqlite     *db.SQLite
 	ErrorHandler *errlib.ErrorHandler
+	Jwt          *jwt.TokenManager
 }
 
 func InitDependencies(cfg *env.Config) Dependencies {
@@ -18,6 +20,14 @@ func InitDependencies(cfg *env.Config) Dependencies {
 
 	// errorHandler
 	dep.ErrorHandler = errlib.NewErrorHandler(cfg.DebugMode)
+
+	tm, err := jwt.NewRSAJwtInit(&cfg.Jwt)
+	if err != nil {
+		log.Println("error init rsa jwt, err: %w", err)
+		tm = nil
+	}
+
+	dep.Jwt = tm
 
 	// db
 	if cfg.InitSqlite {

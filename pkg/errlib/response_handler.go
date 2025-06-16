@@ -8,7 +8,6 @@ import (
 	"oapi-to-rest/pkg/errlib/trace"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
 )
@@ -35,12 +34,6 @@ func (eh *ErrorHandler) HandleError(r *http.Request, err error) ErrorResponse {
 	var errResp ErrorResponse
 	var dbErrRef string
 	var isDBErr bool
-
-	// intercept gin error
-	ginErr, ok := err.(*gin.Error)
-	if ok {
-		err = ginErr.Err
-	}
 
 	// type assertion to determine error type
 	switch e := err.(type) {

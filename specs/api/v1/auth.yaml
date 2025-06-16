@@ -105,6 +105,8 @@ components:
               properties:
                 email:
                   type: string
+                token:
+                  type: string
     RegisterRequest:
       type: object
       properties:

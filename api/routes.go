@@ -30,7 +30,7 @@ func NewServer(cfg *env.Config) *Server {
 	userImpl := user.UserImpl{Db: dep.DbSqlite}
 	userStrictHandler := user.NewStrictHandler(&userImpl, []user.StrictMiddlewareFunc{})
 
-	authImpl := auth.AuthImpl{Db: dep.DbSqlite}
+	authImpl := auth.AuthImpl{Db: dep.DbSqlite, Jwt: dep.Jwt}
 	authStrictHandler := auth.NewStrictHandler(&authImpl, []auth.StrictMiddlewareFunc{})
 
 	return &Server{
