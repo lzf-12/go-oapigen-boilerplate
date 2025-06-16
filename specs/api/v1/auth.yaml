@@ -55,6 +55,34 @@ paths:
             application/json:
               schema:
                 $ref: '../common/response.yaml#/components/schemas/StandardErrorResponse'
+  /refresh:
+    post:
+      summary: login with credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: login with creds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '../common/response.yaml#/components/schemas/StandardErrorResponse'
+        '500':
+          description: internal error
+          content:
+            application/json:
+              schema:
+                $ref: '../common/response.yaml#/components/schemas/StandardErrorResponse'
 components:
   schemas:
     BaseSuccessResponse:
@@ -107,6 +135,8 @@ components:
                   type: string
                 token:
                   type: string
+                refresh_token:
+                  type: string
     RegisterRequest:
       type: object
       properties:
@@ -133,3 +163,17 @@ components:
       required:
         - email
         - password
+    RefreshRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+    RefreshResponse:
+      allOf:
+       - $ref: '../common/response.yaml#/components/schemas/BaseSuccessResponse'
+       - type: object
+         properties:
+            token:
+              type: string
+            refresh_token:
+              type: string

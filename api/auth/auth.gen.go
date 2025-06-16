@@ -40,11 +40,25 @@ type LoginRequest struct {
 // LoginResponse defines model for LoginResponse.
 type LoginResponse struct {
 	Data *struct {
-		Email *string `json:"email,omitempty"`
-		Token *string `json:"token,omitempty"`
+		Email        *string `json:"email,omitempty"`
+		RefreshToken *string `json:"refresh_token,omitempty"`
+		Token        *string `json:"token,omitempty"`
 	} `json:"data,omitempty"`
 	Message    string `json:"message"`
 	StatusCode int    `json:"status_code"`
+}
+
+// RefreshRequest defines model for RefreshRequest.
+type RefreshRequest struct {
+	RefreshToken *string `json:"refresh_token,omitempty"`
+}
+
+// RefreshResponse defines model for RefreshResponse.
+type RefreshResponse struct {
+	Message      string  `json:"message"`
+	RefreshToken *string `json:"refresh_token,omitempty"`
+	StatusCode   int     `json:"status_code"`
+	Token        *string `json:"token,omitempty"`
 }
 
 // RegisterRequest defines model for RegisterRequest.
@@ -67,6 +81,9 @@ type RegisterResponse struct {
 // PostLoginJSONRequestBody defines body for PostLogin for application/json ContentType.
 type PostLoginJSONRequestBody = LoginRequest
 
+// PostRefreshJSONRequestBody defines body for PostRefresh for application/json ContentType.
+type PostRefreshJSONRequestBody = RefreshRequest
+
 // PostRegisterJSONRequestBody defines body for PostRegister for application/json ContentType.
 type PostRegisterJSONRequestBody = RegisterRequest
 
@@ -75,6 +92,9 @@ type ServerInterface interface {
 	// login with credentials
 	// (POST /login)
 	PostLogin(c *gin.Context)
+	// login with credentials
+	// (POST /refresh)
+	PostRefresh(c *gin.Context)
 	// register new user body request
 	// (POST /register)
 	PostRegister(c *gin.Context)
@@ -100,6 +120,19 @@ func (siw *ServerInterfaceWrapper) PostLogin(c *gin.Context) {
 	}
 
 	siw.Handler.PostLogin(c)
+}
+
+// PostRefresh operation middleware
+func (siw *ServerInterfaceWrapper) PostRefresh(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostRefresh(c)
 }
 
 // PostRegister operation middleware
@@ -143,6 +176,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.POST(options.BaseURL+"/login", wrapper.PostLogin)
+	router.POST(options.BaseURL+"/refresh", wrapper.PostRefresh)
 	router.POST(options.BaseURL+"/register", wrapper.PostRegister)
 }
 
@@ -181,6 +215,41 @@ func (response PostLogin500JSONResponse) VisitPostLoginResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostRefreshRequestObject struct {
+	Body *PostRefreshJSONRequestBody
+}
+
+type PostRefreshResponseObject interface {
+	VisitPostRefreshResponse(w http.ResponseWriter) error
+}
+
+type PostRefresh200JSONResponse RefreshResponse
+
+func (response PostRefresh200JSONResponse) VisitPostRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostRefresh401JSONResponse externalRef0.StandardErrorResponse
+
+func (response PostRefresh401JSONResponse) VisitPostRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostRefresh500JSONResponse externalRef0.StandardErrorResponse
+
+func (response PostRefresh500JSONResponse) VisitPostRefreshResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type PostRegisterRequestObject struct {
 	Body *PostRegisterJSONRequestBody
 }
@@ -212,6 +281,9 @@ type StrictServerInterface interface {
 	// login with credentials
 	// (POST /login)
 	PostLogin(ctx context.Context, request PostLoginRequestObject) (PostLoginResponseObject, error)
+	// login with credentials
+	// (POST /refresh)
+	PostRefresh(ctx context.Context, request PostRefreshRequestObject) (PostRefreshResponseObject, error)
 	// register new user body request
 	// (POST /register)
 	PostRegister(ctx context.Context, request PostRegisterRequestObject) (PostRegisterResponseObject, error)
@@ -262,6 +334,39 @@ func (sh *strictHandler) PostLogin(ctx *gin.Context) {
 	}
 }
 
+// PostRefresh operation middleware
+func (sh *strictHandler) PostRefresh(ctx *gin.Context) {
+	var request PostRefreshRequestObject
+
+	var body PostRefreshJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PostRefresh(ctx, request.(PostRefreshRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostRefresh")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PostRefreshResponseObject); ok {
+		if err := validResponse.VisitPostRefreshResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // PostRegister operation middleware
 func (sh *strictHandler) PostRegister(ctx *gin.Context) {
 	var request PostRegisterRequestObject
@@ -298,17 +403,18 @@ func (sh *strictHandler) PostRegister(ctx *gin.Context) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RVT08jPwz9KqP8fseKaffPZW4g7QFppUVwRKgyiduGnUmC7aGq0Hz3VTItLUNa6C5I",
-	"u7coTuznZ/v5UWnfBO/QCavqUbFeYAPp+I3I0yVy8I4xXgTyAUksJjNGczzIKqCqFAtZN1fdqLdMtTeY",
-	"NTfIDPO8jQWk5eFf6wTnSPGBEOjc126kCO9bS2hUdf0U47nHNTS1cXMz2rjxt3eoJQb47ufWXeJ9iyyZ",
-	"pBuwdRZ5AOalJ/M6tt7Hzo8DMLbkQ13/mKnq+lH9TzhTlfqv3FauXJet5ICapxDsVPum8W5KaxfTM2C8",
-	"arVG5ie33WiYnwGBY7IW/xNdLuWY9CCpm26kLnFuWZB+g+CZJZapgybfOTUcsh5fnZ1wu85fKds2v7+7",
-	"ct0w7fT9Jluz45C9gPAH4/6moc6VYT/kKwFngMwr4mZQwNa8X96SCYyxYr2D+mL3d5dBZB0LOH2Ihj2C",
-	"ZxtkgSbk589KnfeZFG5qTd6YLnKjMADeJegznx73sdRpKwt0YjXE3IvTi3M1Ug9IbL1TlZqcjE/GMYgP",
-	"6CBYVanP6SqOjixSmmUd5S3R7nsViPQlf+dGVerCsyQFVH0HIMuZN6v4UHsn6NIfCKFeoyjv2Lvt/oqn",
-	"Q8P2TOQHsyDUYrroeyPh/TQev3fszSDH4AZZkw3SE5i4KZZWFoUmNBy5/DKevBuA562fAZBEo/BUbKSu",
-	"WJLvG+frOxJx7JBmkMY5IQd10e/1+IDbpgFaveQxtizUnB6VtNbpwy24UfMP6sLhMnxTI04+IPx+gjc8",
-	"FQ6XRctIBW1X0D/VDS8zufVmVdAu94wUdSzt6pZqVakSgi0fJnER/goAAP//1omR9yoLAAA=",
+	"H4sIAAAAAAAC/9xWS08jMQz+K6PsHium3cdlbiDtAWmlRXBEaBQStw07kwTbQ1Wh+e+rZKb0QdrSpbCP",
+	"WxQ7fnz+HPtRKFd7Z8EyieJRkJpCLePxG6LDSyDvLEG48Og8IBuIYgjicOC5B1EIYjR2ItpBJymV05AU",
+	"10AkJ2kZseSGNt8ayzABDAqMUqWetgOBcN8YBC2K6ycf6xb70MTCzM1gYcbd3oHi4OC7mxh7CfcNECeS",
+	"rqWpkpF7STRzqPfH1tlYebEjjCX4sqp+jEVx/Sg+IoxFIT7ky8rlfdly8qColN6UytW1syX2JsozSXDV",
+	"KAVET2bbwWZ+WrI8JGuEMQJNS3Y/wSY1tknaAMtG2jftQFx2FrdWYJ/HNgHmk833hvMV8GwBZ2KIAX+D",
+	"n2ODxKWVdbrxKrlLeji5V9ytGt/D+mV+fzfx28204/ObZM0Oi+xZCK/4LV/0J6bKsD3kK5ZWS9R7ZoMG",
+	"lqai7dMhiqTWho2zsrpYfZ3qYGOJpVW7YNgyL0wNxLL26e4zXKVtxgFRGp0WxosX9GwbQx+7qNz5EqcN",
+	"T8GyUTLknp1enIuBeAAk46woxOhkeDIMTpwHK70Rhfgcr0Lr8DSmmVdhOkTYXfcLBPiivXMtCnHhiOMA",
+	"ER0DgPjM6XlQVM4y2PhGel/1UeR35Oxy/IfTrmZbm5EbvcDYQLzouBHj/TQcHtv3opGDcw2k0HjuAIzY",
+	"ZDPD00whaApYfhmOjhbAOvUTAcRPI3OYLb66bIauI87XIwJxaJMmIg19glZWWbcWBQVq6lri/DmOgbKy",
+	"oqiU93NtNwP7qftGHNzYE96ZhZsbxR/g4VHq/yAro7O+nFm3jPxXPO32iX1E7bXeiqnrS9uLqDp6A/fb",
+	"AV7glFmYZQ0BZrhclf4pNjzP5NbpeYar2BNgmLdxp2ywEoXIpTf5wygsbL8CAAD//1PhOjQRDwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

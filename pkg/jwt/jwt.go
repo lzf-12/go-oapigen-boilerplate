@@ -24,10 +24,10 @@ type JwtConfig struct {
 }
 
 type TokenManager struct {
-	alg        string
-	privateKey any
-	publicKey  any
-	expiresIn  time.Duration
+	alg             string
+	privateKey      any
+	publicKey       any
+	ExpiresInSecond time.Duration
 }
 
 func NewRSAJwtInit(config *JwtConfig) (*TokenManager, error) {
@@ -40,16 +40,16 @@ func NewRSAJwtInit(config *JwtConfig) (*TokenManager, error) {
 		return nil, err
 	}
 	return &TokenManager{
-		alg:        RS256,
-		privateKey: privKey,
-		publicKey:  pubKey,
-		expiresIn:  config.ExpiresInSecond,
+		alg:             RS256,
+		privateKey:      privKey,
+		publicKey:       pubKey,
+		ExpiresInSecond: config.ExpiresInSecond,
 	}, nil
 }
 
 func (tm *TokenManager) GenerateJWT(claims jwt.MapClaims) (string, error) {
 
-	claims["exp"] = time.Now().Add(tm.expiresIn).Unix()
+	claims["exp"] = time.Now().Add(tm.ExpiresInSecond).Unix()
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(tm.alg), claims)
 
 	switch tm.alg {

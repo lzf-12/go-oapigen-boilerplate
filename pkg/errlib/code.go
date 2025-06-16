@@ -4,6 +4,7 @@ const (
 	ErrCodeUserNotFound           string = "USER_NOT_FOUND"
 	ErrCodeInvalidEmailOrPassword string = "INVALID_EMAIL_OR_PASSWORD"
 	ErrCodeTokenExpired           string = "TOKEN_EXPIRED"
+	ErrCodeInvalidRefreshToken    string = "INVALID_REFRESH_TOKEN"
 	ErrCodeInvalidInput           string = "INVALID_INPUT"
 	ErrCodeAccessDenied           string = "ACCESS_DENIED"
 	ErrCodeUnauthorized           string = "UNAUTHORIZED"
