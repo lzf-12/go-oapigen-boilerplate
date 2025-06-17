@@ -5,6 +5,7 @@ import (
 	"oapi-to-rest/api/user"
 	"oapi-to-rest/pkg/env"
 	"oapi-to-rest/pkg/errlib"
+	"oapi-to-rest/pkg/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +28,7 @@ func NewServer(cfg *env.Config) *Server {
 
 	dep := InitDependencies(cfg)
 
-	userImpl := user.UserImpl{Db: dep.DbSqlite, Qb: dep.QueryBuilder}
+	userImpl := user.UserImpl{Sqlx: dep.Sqlx}
 	userStrictHandler := user.NewStrictHandler(&userImpl, []user.StrictMiddlewareFunc{})
 
 	authImpl := auth.AuthImpl{Db: dep.DbSqlite, Jwt: dep.Jwt}
@@ -57,7 +58,12 @@ func (s *Server) RegisterRoutes() {
 
 	userV1, authV1 := v1, v1.Group("auth")
 
-	user.RegisterHandlers(userV1, s.User)
+	// authorization bearer middleware
+	mw := middleware.NewAuthenticationMiddleware(s.Config.Jwt.PublicKeyBase64)
+	userOpts := user.GinServerOptions{
+		Middlewares: []user.MiddlewareFunc{mw.AuthorizationBearerJWT()},
+	}
+	user.RegisterHandlersWithOptions(userV1, s.User, userOpts)
 	auth.RegisterHandlers(authV1, s.Auth)
 }
 

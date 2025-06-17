@@ -3,13 +3,9 @@ package jwt
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/pem"
 	"errors"
-	"fmt"
-	"log"
+	"oapi-to-rest/pkg/helper"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,11 +29,11 @@ type TokenManager struct {
 }
 
 func NewRSAJwtInit(config *JwtConfig) (*TokenManager, error) {
-	privKey, err := loadRSAPrivateKey(config.PrivateKeyBase64)
+	privKey, err := helper.LoadRSAPrivateKey(config.PrivateKeyBase64)
 	if err != nil {
 		return nil, err
 	}
-	pubKey, err := loadRSAPublicKey(config.PublicKeyBase64)
+	pubKey, err := helper.LoadRSAPublicKey(config.PublicKeyBase64)
 	if err != nil {
 		return nil, err
 	}
@@ -104,40 +100,6 @@ func (tm *TokenManager) ValidateJWT(tokenString string) (jwt.MapClaims, error) {
 		return nil, errors.New("invalid claims")
 	}
 	return claims, nil
-}
-
-// --- Helper functions to load keys from base64 string in env
-
-func loadRSAPrivateKey(s string) (*rsa.PrivateKey, error) {
-	decodedBytes, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return nil, fmt.Errorf("error: %w", err)
-	}
-
-	block, _ := pem.Decode(decodedBytes)
-	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		log.Println("error parse private key")
-		return nil, err
-	}
-
-	pk, _ := priv.(*rsa.PrivateKey)
-	return pk, nil
-}
-
-func loadRSAPublicKey(s string) (*rsa.PublicKey, error) {
-	decodedBytes, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		return nil, fmt.Errorf("error: %w", err)
-	}
-
-	block, _ := pem.Decode(decodedBytes)
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		log.Println("error parse public key")
-		return nil, err
-	}
-	return pub.(*rsa.PublicKey), nil
 }
 
 func CreateUserClaims(userID, username, email string, roles []string) jwt.MapClaims {

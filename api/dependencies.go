@@ -6,11 +6,14 @@ import (
 	"oapi-to-rest/pkg/env"
 	"oapi-to-rest/pkg/errlib"
 	"oapi-to-rest/pkg/jwt"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Dependencies struct {
-	DbSqlite     *db.SQLite
-	QueryBuilder *db.QueryBuilder
+	DbSqlite *db.SQLite
+	Sqlx     *sqlx.DB
+
 	ErrorHandler *errlib.ErrorHandler
 	Jwt          *jwt.TokenManager
 }
@@ -53,8 +56,8 @@ func InitDependencies(cfg *env.Config) Dependencies {
 			log.Fatalf("error sqlite not ready: %v", err)
 		}
 
-		// assign query builder if use sqlite
-		dep.QueryBuilder = db.NewQueryBuilder(dep.DbSqlite.DB)
+		// sqlx deps wrap sql.DB with sqlx
+		dep.Sqlx = sqlx.NewDb(dep.DbSqlite.DB, "sqlite3")
 	}
 
 	return dep

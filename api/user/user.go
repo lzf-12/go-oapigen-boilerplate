@@ -2,14 +2,16 @@ package user
 
 import (
 	"context"
-	"oapi-to-rest/pkg/db"
+	"fmt"
 	"oapi-to-rest/pkg/errlib"
 	"strconv"
+	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type UserImpl struct {
-	Db *db.SQLite
-	Qb *db.QueryBuilder
+	Sqlx *sqlx.DB
 }
 
 var _ StrictServerInterface = (*UserImpl)(nil)
@@ -20,62 +22,71 @@ const (
 	maxPageSize     int64 = 100
 )
 
+type UserRow struct {
+	User
+	CountMatched int64 `db:"count_matched"`
+}
+
 func (u *UserImpl) GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error) {
 
 	var result PaginatedUserResponse
 	params := request.Params
 
-	query := u.Qb.Select(
-		"u.id, u.email, u.first_name, u.last_name, u.is_active, COUNT(*) OVER() AS total_items",
-	).Table("users u")
+	// build the base query
+	baseQuery := `SELECT u.id, u.email, u.first_name, u.last_name, u.is_active, COUNT(*) OVER() AS count_matched FROM users u`
+
+	var whereConditions []string
+	var args []interface{}
+	argIndex := 1
 
 	if params.Email != nil {
-		query = query.Where("u.email", "=", params.Email)
+		whereConditions = append(whereConditions, fmt.Sprintf("u.email = $%d", argIndex))
+		args = append(args, *params.Email)
+		argIndex++
 	}
 
 	if params.IsActive != nil {
-		isactive, err := strconv.ParseBool(*params.IsActive)
+		isActive, err := strconv.ParseBool(*params.IsActive)
 		if err != nil {
 			return GetUser500JSONResponse{}, err
 		}
-
-		query = query.Where("u.is_active", "=", isactive)
+		whereConditions = append(whereConditions, fmt.Sprintf("u.is_active = $%d", argIndex))
+		args = append(args, isActive)
+		argIndex++
 	}
 
-	limit, offset := GetPagination(params.Page, params.PageSize)
-	query.Limit(limit).Offset(offset)
+	// construct where
+	query := baseQuery
+	if len(whereConditions) > 0 {
+		query += " WHERE " + strings.Join(whereConditions, " AND ")
+	}
 
-	rows, err := query.Get()
+	limit, offset := parsePaginationParams(params.Page, params.PageSize)
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	args = append(args, limit, offset)
+
+	var userRows []UserRow
+	err := u.Sqlx.SelectContext(ctx, &userRows, query, args...)
 	if err != nil {
 		return GetUser500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeDBQuery)
 	}
 
 	var totalMatched int64
 	var users []User
-	for rows.Next() {
-		var user User
-		err := rows.Scan(
-			&user.Id,
-			&user.FirstName,
-			&user.LastName,
-			&user.Email,
-			&user.IsActive,
-			&totalMatched,
-		)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, user)
+
+	for _, userRow := range userRows {
+		users = append(users, userRow.User)
+		totalMatched = userRow.CountMatched
 	}
+
 	result.Data = &users
 	result.Filters = toInterfacePtr(params)
-
 	result.Pagination = buildPagination(params.Page, params.PageSize, totalMatched)
 
 	return GetUser200JSONResponse(result), nil
 }
 
-func GetPagination(pagePtr, pageSizePtr *int64) (limit, offset int64) {
+func parsePaginationParams(pagePtr, pageSizePtr *int64) (limit, offset int64) {
 	page := defaultPage
 	pageSize := defaultPageSize
 
