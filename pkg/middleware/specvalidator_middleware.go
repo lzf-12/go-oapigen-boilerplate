@@ -23,9 +23,7 @@ func RequestValidationMiddleware(msv *spec_validator.MultiSpecValidator) gin.Han
 
 		// add route mapping
 		for _, spec := range msv.Config.Specs {
-
 			msv.AddRouteMapping(spec.RoutePath, spec.Name)
-
 		}
 
 		// validate the request based on spec

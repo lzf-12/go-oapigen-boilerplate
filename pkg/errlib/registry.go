@@ -119,4 +119,10 @@ var errorRegistry = map[string]AppError{
 		Message: "Requested data not found",
 		Status:  http.StatusNotFound,
 	},
+
+	ErrCodeEmailAlreadyUsed: {
+		Code:    ErrCodeEmailAlreadyUsed,
+		Message: "Email already used",
+		Status:  http.StatusBadRequest,
+	},
 }

@@ -21,61 +21,55 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
 	strictgin "github.com/oapi-codegen/runtime/strictmiddleware/gin"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for CreateUserRequestRole.
 const (
-	Admin  CreateUserRequestRole = "admin"
-	Member CreateUserRequestRole = "member"
+	BearerAuthScopes = "bearerAuth.Scopes"
 )
 
-// CreateUserRequest defines model for CreateUserRequest.
-type CreateUserRequest struct {
-	Age      *int                  `json:"age,omitempty"`
-	Email    openapi_types.Email   `json:"email"`
-	Role     CreateUserRequestRole `json:"role"`
-	Username string                `json:"username"`
-}
+// PaginatedUserResponse defines model for PaginatedUserResponse.
+type PaginatedUserResponse struct {
+	Data *[]User `json:"data,omitempty"`
 
-// CreateUserRequestRole defines model for CreateUserRequest.Role.
-type CreateUserRequestRole string
-
-// ErrorResponse defines model for ErrorResponse.
-type ErrorResponse struct {
-	ErrorCode *string `json:"error_code,omitempty"`
-	Message   *string `json:"message,omitempty"`
+	// Filters show applied filters parameter
+	Filters    *interface{} `json:"filters,omitempty"`
+	Pagination *struct {
+		CurrentPage *int64 `json:"currentPage,omitempty"`
+		PageSize    *int64 `json:"pageSize,omitempty"`
+		TotalItems  *int64 `json:"totalItems,omitempty"`
+		TotalPages  *int64 `json:"totalPages,omitempty"`
+	} `json:"pagination,omitempty"`
 }
 
 // User defines model for User.
 type User struct {
-	Age      *int    `json:"age,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Id       *int64  `json:"id,omitempty"`
-	Role     *string `json:"role,omitempty"`
-	Username *string `json:"username,omitempty"`
+	Email     *string `db:"email" json:"email,omitempty"`
+	FirstName *string `db:"first_name" json:"first_name,omitempty"`
+	Id        *int64  `db:"id" json:"id,omitempty"`
+	IsActive  *int32  `db:"is_active" json:"is_active,omitempty"`
+	LastName  *string `db:"last_name" json:"last_name,omitempty"`
 }
 
 // GetUserParams defines parameters for GetUser.
 type GetUserParams struct {
-	// Role role to filter by
-	Role *string `form:"role,omitempty" json:"role,omitempty"`
+	// Email email to filter by
+	Email *string `form:"email,omitempty" json:"email,omitempty"`
 
-	// Limit maximum number of results to return
-	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	// IsActive is_active to filter by
+	IsActive *string `form:"is_active,omitempty" json:"is_active,omitempty"`
+
+	// Page filter by page
+	Page *int64 `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize size of each page
+	PageSize *int64 `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 }
-
-// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
-type CreateUserJSONRequestBody = CreateUserRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Get all users
+	// Get users with filters
 	// (GET /user)
 	GetUser(c *gin.Context, params GetUserParams)
-	// Create a new user
-	// (POST /user)
-	CreateUser(c *gin.Context)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -92,22 +86,40 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 
 	var err error
 
+	c.Set(BearerAuthScopes, []string{})
+
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetUserParams
 
-	// ------------- Optional query parameter "role" -------------
+	// ------------- Optional query parameter "email" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "role", c.Request.URL.Query(), &params.Role)
+	err = runtime.BindQueryParameter("form", true, false, "email", c.Request.URL.Query(), &params.Email)
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter role: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter email: %w", err), http.StatusBadRequest)
 		return
 	}
 
-	// ------------- Optional query parameter "limit" -------------
+	// ------------- Optional query parameter "is_active" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	err = runtime.BindQueryParameter("form", true, false, "is_active", c.Request.URL.Query(), &params.IsActive)
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter is_active: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page", c.Request.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -119,19 +131,6 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 	}
 
 	siw.Handler.GetUser(c, params)
-}
-
-// CreateUser operation middleware
-func (siw *ServerInterfaceWrapper) CreateUser(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CreateUser(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -162,7 +161,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/user", wrapper.GetUser)
-	router.POST(options.BaseURL+"/user", wrapper.CreateUser)
 }
 
 type GetUserRequestObject struct {
@@ -173,7 +171,7 @@ type GetUserResponseObject interface {
 	VisitGetUserResponse(w http.ResponseWriter) error
 }
 
-type GetUser200JSONResponse []User
+type GetUser200JSONResponse PaginatedUserResponse
 
 func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -182,35 +180,18 @@ func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWrite
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateUserRequestObject struct {
-	Body *CreateUserJSONRequestBody
-}
+type GetUser400JSONResponse externalRef0.StandardErrorResponse
 
-type CreateUserResponseObject interface {
-	VisitCreateUserResponse(w http.ResponseWriter) error
-}
-
-type CreateUser201JSONResponse User
-
-func (response CreateUser201JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateUser400JSONResponse ErrorResponse
-
-func (response CreateUser400JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+func (response GetUser400JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateUser500JSONResponse ErrorResponse
+type GetUser500JSONResponse externalRef0.StandardErrorResponse
 
-func (response CreateUser500JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+func (response GetUser500JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -219,12 +200,9 @@ func (response CreateUser500JSONResponse) VisitCreateUserResponse(w http.Respons
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Get all users
+	// Get users with filters
 	// (GET /user)
 	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
-	// Create a new user
-	// (POST /user)
-	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
 }
 
 type StrictHandlerFunc = strictgin.StrictGinHandlerFunc
@@ -266,54 +244,22 @@ func (sh *strictHandler) GetUser(ctx *gin.Context, params GetUserParams) {
 	}
 }
 
-// CreateUser operation middleware
-func (sh *strictHandler) CreateUser(ctx *gin.Context) {
-	var request CreateUserRequestObject
-
-	var body CreateUserJSONRequestBody
-	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.Status(http.StatusBadRequest)
-		ctx.Error(err)
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateUser(ctx, request.(CreateUserRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateUser")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		ctx.Error(err)
-		ctx.Status(http.StatusInternalServerError)
-	} else if validResponse, ok := response.(CreateUserResponseObject); ok {
-		if err := validResponse.VisitCreateUserResponse(ctx.Writer); err != nil {
-			ctx.Error(err)
-		}
-	} else if response != nil {
-		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
@@ -353,7 +299,7 @@ func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
 		res[pathToFile] = rawSpec
 	}
 
-	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "specs/api/common/response.yaml")) {
+	for rawPath, rawFunc := range externalRef0.PathToRawSpec(path.Join(path.Dir(pathToFile), "../common/response.yaml")) {
 		if _, ok := res[rawPath]; ok {
 			// it is not possible to compare functions in golang, so always overwrite the old value
 		}

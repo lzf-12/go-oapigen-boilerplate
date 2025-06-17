@@ -3,7 +3,7 @@ info:
   title: Authentication API
   version: 1.0.0
 servers:
-  - url: /api/v1
+  - url: /api/v1/auth
 paths:
   /register:
     post:
@@ -21,6 +21,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '../common/response.yaml#/components/schemas/StandardErrorResponse'
         '500':
           description: internal error
           content:

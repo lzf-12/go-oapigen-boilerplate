@@ -6,4 +6,4 @@ generate:
   models: true
 output: user.gen.go
 import-mapping:
-  specs/api/common/response.yaml: "oapi-to-rest/api/common"
+  ../common/response.yaml: "oapi-to-rest/api/common"

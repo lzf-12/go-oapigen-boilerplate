@@ -1,6 +1,7 @@
 package errlib
 
 const (
+	ErrCodeEmailAlreadyUsed       string = "EMAIL_ALREADY_USED"
 	ErrCodeUserNotFound           string = "USER_NOT_FOUND"
 	ErrCodeInvalidEmailOrPassword string = "INVALID_EMAIL_OR_PASSWORD"
 	ErrCodeTokenExpired           string = "TOKEN_EXPIRED"

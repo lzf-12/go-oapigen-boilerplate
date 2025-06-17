@@ -33,8 +33,8 @@ func main() {
 
 	// apply spec validation middleware
 	server.Router.Use(middleware.RequestValidationMiddleware(msv))
-	server.Router.Use(middleware.ResponseValidationMiddleware(msv))
 
 	server.RegisterRoutes()
+
 	log.Fatal(server.Start(":8080"))
 }

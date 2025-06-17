@@ -27,7 +27,7 @@ func NewServer(cfg *env.Config) *Server {
 
 	dep := InitDependencies(cfg)
 
-	userImpl := user.UserImpl{Db: dep.DbSqlite}
+	userImpl := user.UserImpl{Db: dep.DbSqlite, Qb: dep.QueryBuilder}
 	userStrictHandler := user.NewStrictHandler(&userImpl, []user.StrictMiddlewareFunc{})
 
 	authImpl := auth.AuthImpl{Db: dep.DbSqlite, Jwt: dep.Jwt}
@@ -55,8 +55,10 @@ func (s *Server) RegisterRoutes() {
 	api := s.Router.Group("api")
 	v1 := api.Group("v1")
 
-	user.RegisterHandlers(v1, s.User)
-	auth.RegisterHandlers(v1, s.Auth)
+	userV1, authV1 := v1, v1.Group("auth")
+
+	user.RegisterHandlers(userV1, s.User)
+	auth.RegisterHandlers(authV1, s.Auth)
 }
 
 func (s *Server) Start(addr string) error {

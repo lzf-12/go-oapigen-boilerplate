@@ -10,6 +10,7 @@ import (
 
 type Dependencies struct {
 	DbSqlite     *db.SQLite
+	QueryBuilder *db.QueryBuilder
 	ErrorHandler *errlib.ErrorHandler
 	Jwt          *jwt.TokenManager
 }
@@ -51,6 +52,9 @@ func InitDependencies(cfg *env.Config) Dependencies {
 		if err != nil {
 			log.Fatalf("error sqlite not ready: %v", err)
 		}
+
+		// assign query builder if use sqlite
+		dep.QueryBuilder = db.NewQueryBuilder(dep.DbSqlite.DB)
 	}
 
 	return dep

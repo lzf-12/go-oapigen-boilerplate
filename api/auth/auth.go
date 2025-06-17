@@ -24,6 +24,19 @@ var _ StrictServerInterface = (*AuthImpl)(nil)
 
 func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequestObject) (PostRegisterResponseObject, error) {
 
+	// validate email
+	row := a.Db.DB.QueryRowContext(ctx, `
+		SELECT u.id, u.email FROM users u
+		WHERE u.email = $1 order by created_at desc limit 1;
+	`, request.Body.Email)
+
+	var userID int64
+	var email string
+	err := row.Scan(&userID, &email)
+	if email == request.Body.Email {
+		return PostRegister400JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeEmailAlreadyUsed)
+	}
+
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(request.Body.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return PostRegister500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeInternalServer)
@@ -34,7 +47,6 @@ func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequest
 		return PostRegister500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeDBTransaction)
 	}
 
-	var userID int64
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO users (email, first_name, last_name)
 		VALUES (?, ?, ?)`,
@@ -42,7 +54,7 @@ func (a *AuthImpl) PostRegister(ctx context.Context, request PostRegisterRequest
 	)
 	if err != nil {
 		tx.Rollback()
-		return PostRegister500JSONResponse{}, errlib.NewAppErrorWithLog(err, errlib.ErrCodeDBTransaction)
+		return PostRegister500JSONResponse{}, err
 	}
 
 	userID, err = result.LastInsertId()
@@ -81,10 +93,10 @@ func (a *AuthImpl) PostLogin(ctx context.Context, request PostLoginRequestObject
 
 	// check email exist
 	row := a.Db.DB.QueryRowContext(ctx, `
-	SELECT u.id, u.email, ac.password_hash FROM users u
-	LEFT join auth_credentials ac 
-	WHERE u.email = $1 order by created_at desc limit 1;
-`, request.Body.Email)
+		SELECT u.id, u.email, ac.password_hash FROM users u
+		LEFT join auth_credentials ac 
+		WHERE u.email = $1 order by created_at desc limit 1;
+	`, request.Body.Email)
 
 	var userID int
 	var email string
@@ -162,6 +174,7 @@ func (a *AuthImpl) PostLogin(ctx context.Context, request PostLoginRequestObject
 func (a *AuthImpl) PostRefresh(ctx context.Context, request PostRefreshRequestObject) (PostRefreshResponseObject, error) {
 
 	refreshToken := request.Body.RefreshToken
+
 	// check refresh token
 	row := a.Db.DB.QueryRowContext(ctx, `
 		SELECT us.user_id, us.user_agent, us.is_valid, us.expires_at, us.access_token, u.email, 
